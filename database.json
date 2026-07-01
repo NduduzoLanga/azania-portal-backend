@@ -129,7 +129,31 @@
     {
       "name": "Ms. Mbali Precious Radebe",
       "studentNo": "A445870-005",
-      "parentEmail": "marikazembe@gmail.com",
+      "parentEmail": "habeebradebe@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+     {
+      "name": "Mr. Thando Zwane",
+      "studentNo": "A445870-001",
+      "parentEmail": "kopo.nduduzo@gmail.com",
       "password": null,
       "missedExams": [
         {
