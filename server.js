@@ -6,8 +6,31 @@ const path = require('path');
 const app = express();
 const dbPath = path.join(__dirname, 'database.json');
 
-const getDb = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-const saveDb = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+// 🧠 IN-MEMORY DATABASE CACHE (Prevents crashes on read-only serverless platforms)
+let memoryDb = null;
+
+const getDb = () => {
+    if (memoryDb) return memoryDb;
+    try {
+        memoryDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        return memoryDb;
+    } catch (err) {
+        console.error("❌ Failed to read database.json file:", err);
+        return { students: [] };
+    }
+};
+
+const saveDb = (data) => {
+    // Always update the active live memory first so subsequent calls see the changes
+    memoryDb = data; 
+    
+    try {
+        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+    } catch (error) {
+        // 🛡️ Safe guard intercept: Logs the error to Vercel console instead of crashing the process
+        console.warn("⚠️ System notice: Local write blocked by read-only environment. State preserved in running memory instance.");
+    }
+};
 
 app.use(cors());
 app.use(express.json());
@@ -22,7 +45,7 @@ app.use((req, res, next) => {
 // AUTHENTICATION MODULES
 // ==========================================
 
-// ✅ Aligned to match the frontend apiService call exactly (/api/auth/verify)
+// Step 1: Verify Student Number
 app.post('/api/auth/verify', (req, res) => {
     const { studentNo } = req.body;
     const db = getDb();
