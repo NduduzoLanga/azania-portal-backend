@@ -1,0 +1,178 @@
+{
+  "students": [
+    {
+      "name": "Mr. Thando Zalie",
+      "studentNo": "A445870-017",
+      "parentEmail": "idahzalie61@gmail.com",
+      "password": "null",
+      "missedExams": [
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": [
+        {
+          "id": "B-A445870-017-1782919267848",
+          "examId": "SDG-P1",
+          "examName": "SDG P1 - End-User Computing",
+          "date": "2026-07-13",
+          "time": "10:00 - 12:30",
+          "status": "Conditional (Pending EFT)",
+          "expiresAt": "2026-07-08",
+          "fee": 200
+        }
+      ]
+    },
+    {
+      "name": "Mr. Lukwago Ntilane",
+      "studentNo": "A445870-025",
+      "parentEmail": "craneartupholstery@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+    {
+      "name": "Mr. Thando Azande Khambule",
+      "studentNo": "A445870-004",
+      "parentEmail": "snenhlanhlakhambule@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+    {
+      "name": "Mr. Qhawe Zwane",
+      "studentNo": "A445870-006",
+      "parentEmail": "marikazembe@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+    {
+      "name": "Mr. Sibusiso Tafirrei Ngidi",
+      "studentNo": "A445870-023",
+      "parentEmail": "ngidimoipone8@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+    {
+      "name": "Ms. Mbali Precious Radebe",
+      "studentNo": "A445870-005",
+      "parentEmail": "marikazembe@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    },
+    {
+      "name": "Ms. Bokamoso Mohale",
+      "studentNo": "A445870-022",
+      "parentEmail": "mohalepatriciah504@gmail.com",
+      "password": null,
+      "missedExams": [
+        {
+          "id": "SDG-P1",
+          "name": "SDG P1 - End-User Computing",
+          "fee": 200
+        },
+        {
+          "id": "SDG-P2",
+          "name": "SDG P2 - Computer Basics & Navigation",
+          "fee": 150
+        },
+        {
+          "id": "SDG-P3",
+          "name": "SDG P3 - FINAL PROJECT (SDG 11)",
+          "fee": 200
+        }
+      ],
+      "bookings": []
+    }
+  ]
+}
