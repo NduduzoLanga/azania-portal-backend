@@ -22,8 +22,8 @@ app.use((req, res, next) => {
 // AUTHENTICATION MODULES
 // ==========================================
 
-// Step 1: Verify Student Number
-app.post('/api/auth/verify-step1', (req, res) => {
+// ✅ Aligned to match the frontend apiService call exactly (/api/auth/verify)
+app.post('/api/auth/verify', (req, res) => {
     const { studentNo } = req.body;
     const db = getDb();
     const student = db.students.find(s => s.studentNo === studentNo);
