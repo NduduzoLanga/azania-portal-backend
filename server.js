@@ -11,7 +11,6 @@ let memoryDb = null;
 const getDb = () => {
     if (memoryDb) return memoryDb;
 
-    // 🗺️ Try resolving the path using both Vercel's root directory and the local directory
     const pathsToTry = [
         path.join(process.cwd(), 'database.json'),
         path.join(__dirname, 'database.json')
@@ -33,19 +32,29 @@ const getDb = () => {
     }
 
     // 🛡️ ULTIMATE FAILSAFE COHORT DATA
-    // If Vercel completely detaches the json file during compilation, this preserves the system functionality
     console.warn("⚠️ database.json untraceable or unreadable. Deploying live fallback cohort registry.");
     memoryDb = {
         students: [
             {
                 studentNo: "SDG1001",
                 name: "Thando Langa",
-                password: null,
+                password: "password123",
                 missedExams: [
                     { id: "EUC101", name: "End User Computing", fee: 150 },
                     { id: "DC102", name: "Digital Citizenship", fee: 150 }
                 ],
-                bookings: []
+                bookings: [
+                    {
+                        id: "B-SDG1001-1719820000000",
+                        examId: "DC102",
+                        examName: "Digital Citizenship",
+                        date: "2026-07-14",
+                        time: "10:00 - 12:30",
+                        status: "Conditional (Pending EFT)",
+                        expiresAt: "2026-07-21",
+                        fee: 150
+                    }
+                ]
             },
             {
                 studentNo: "SDG1002",
@@ -61,7 +70,18 @@ const getDb = () => {
                 name: "Ihsaan Motaung",
                 password: "demo-password-123",
                 missedExams: [],
-                bookings: []
+                bookings: [
+                    {
+                        id: "B-SDG1003-1719830000000",
+                        examId: "EUC101",
+                        examName: "End User Computing",
+                        date: "2026-07-20",
+                        time: "13:00 - 15:30",
+                        status: "Approved (Paid)",
+                        expiresAt: "2026-07-27",
+                        fee: 150
+                    }
+                ]
             }
         ]
     };
@@ -69,22 +89,16 @@ const getDb = () => {
 };
 
 const saveDb = (data) => {
-    memoryDb = data; // Always keep the operational runtime cache synchronized
-    
-    const pathsToTry = [
-        path.join(process.cwd(), 'database.json'),
-        path.join(__dirname, 'database.json')
-    ];
-
+    memoryDb = data; 
+    const pathsToTry = [ path.join(process.cwd(), 'database.json'), path.join(__dirname, 'database.json') ];
     for (const targetPath of pathsToTry) {
         try {
             fs.writeFileSync(targetPath, JSON.stringify(data, null, 2));
             return;
         } catch (error) {
-            // Silently cycle through until running memory acts as the primary layer
+            // Memory takes priority
         }
     }
-    console.warn("⚠️ System Note: Persistent write skipped by read-only filesystem. State preserved in memory instance.");
 };
 
 app.use(cors());
@@ -99,70 +113,33 @@ app.use((req, res, next) => {
 // ==========================================
 // CORE AUTHENTICATION ROUTERS
 // ==========================================
-
 app.post('/api/auth/verify', (req, res) => {
     const { studentNo } = req.body;
     const db = getDb();
-    
-    // Normalize user input formatting to eliminate casing errors
     const lookupKey = studentNo ? studentNo.trim().toUpperCase() : '';
     const student = db.students.find(s => s.studentNo.toUpperCase() === lookupKey);
     
-    if (!student) {
-        return res.status(404).json({ 
-            message: `Student number "${studentNo}" not found in this cohort.` 
-        });
-    }
+    if (!student) return res.status(404).json({ message: `Student number "${studentNo}" not found.` });
     
-    res.json({ 
-        name: student.name,
-        hasPassword: student.password !== null 
-    });
+    res.json({ name: student.name, hasPassword: student.password !== null });
 });
 
-const handleAuthStep2 = (req, res) => {
+app.post('/api/auth/login', (req, res) => {
     const { studentNo, password } = req.body;
     const db = getDb();
     const lookupKey = studentNo ? studentNo.trim().toUpperCase() : '';
     const student = db.students.find(s => s.studentNo.toUpperCase() === lookupKey);
 
     if (!student) return res.status(404).json({ message: 'Student profile missing.' });
-
-    if (student.password === null) {
-        student.password = password;
-        saveDb(db);
-        console.log(`🔐 Password configured successfully for ${student.name}`);
-    } else if (student.password !== password) {
-        console.log(`❌ Failed login attempt for ${student.name}`);
-        return res.status(401).json({ message: 'Incorrect password.' });
-    }
-
-    console.log(`🚀 Successful session authenticated for ${student.name}`);
+    if (student.password !== password) return res.status(401).json({ message: 'Incorrect password.' });
 
     const mockToken = `mock-session-token-${student.studentNo}-${Date.now()}`;
-    const profileWithKeys = {
-        ...student,
-        _id: student.studentNo,
-        id: student.studentNo,
-        role: 'student'
-    };
-
-    res.json({
-        ...profileWithKeys,
-        user: profileWithKeys,
-        student: profileWithKeys,
-        token: mockToken,
-        success: true
-    });
-};
-
-app.post('/api/auth/login', handleAuthStep2);
-app.post('/api/auth/setup-password', handleAuthStep2);
+    res.json({ ...student, token: mockToken, success: true });
+});
 
 // ==========================================
 // RESERVATION MANAGEMENT ROUTERS
 // ==========================================
-
 app.post('/api/bookings/reserve', (req, res) => {
     const { studentNo, examId, date, time } = req.body;
     const db = getDb();
@@ -171,32 +148,29 @@ app.post('/api/bookings/reserve', (req, res) => {
 
     if (!student) return res.status(404).json({ message: 'Student profile missing.' });
 
-    const exam = student.missedExams.find(e => e.id === examId);
-    if (!exam) return res.status(400).json({ message: 'Module already scheduled or unavailable.' });
+    // Handle duplicate checks for reschedule overrides vs new bookings
+    student.bookings = student.bookings.filter(b => b.examId !== examId);
 
+    const exam = student.missedExams.find(e => e.id === examId) || { id: examId, name: examId, fee: 150 };
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
-    const expiryString = expiryDate.toISOString().split('T')[0];
 
     const newBooking = {
         id: `B-${studentNo}-${Date.now()}`,
         examId: exam.id,
-        examName: exam.name,
+        examName: exam.name || examId,
         date,
         time,
         status: 'Conditional (Pending EFT)',
-        expiresAt: expiryString,
-        fee: exam.fee
+        expiresAt: expiryDate.toISOString().split('T')[0],
+        fee: exam.fee || 150
     };
 
     student.bookings.push(newBooking);
     student.missedExams = student.missedExams.filter(e => e.id !== examId);
     saveDb(db);
     
-    res.json({
-        message: 'Conditional booking reserved successfully!',
-        updatedStudent: student
-    });
+    res.json({ message: 'Seat reserved successfully!', updatedStudent: student });
 });
 
 app.get('/api/bookings/slots', (req, res) => {
@@ -208,10 +182,36 @@ app.get('/api/bookings/slots', (req, res) => {
     res.json(dates.map(d => ({ date: d, times: ['10:00 - 12:30', '13:00 - 15:30'] })));
 });
 
+// ==========================================
+// 👑 ADMINISTRATIVE ACCESS ROUTERS
+// ==========================================
+
+// Get complete global ledger for all students and bookings
+app.get('/api/admin/students', (req, res) => {
+    res.json(getDb().students);
+});
+
+// Update booking status or date/time parameters administratively
+app.post('/api/admin/bookings/update', (req, res) => {
+    const { studentNo, bookingId, status, date, time } = req.body;
+    const db = getDb();
+    const student = db.students.find(s => s.studentNo.toUpperCase() === studentNo.toUpperCase());
+
+    if (!student) return res.status(404).json({ message: 'Student parameter not found.' });
+    
+    const booking = student.bookings.find(b => b.id === bookingId);
+    if (!booking) return res.status(404).json({ message: 'Target entry ticket voucher missing.' });
+
+    if (status) booking.status = status;
+    if (date) booking.date = date;
+    if (time) booking.time = time;
+
+    saveDb(db);
+    res.json({ message: 'Administrative parameters modified successfully!', students: db.students });
+});
+
 app.use((req, res) => {
-    res.status(404).json({ 
-        message: `Oops! The frontend tried to hit a backend route that isn't defined yet: ${req.method} ${req.url}` 
-    });
+    res.status(404).json({ message: `Route undefined: ${req.method} ${req.url}` });
 });
 
 const PORT = 5000;
