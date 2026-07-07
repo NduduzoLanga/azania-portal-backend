@@ -31,7 +31,6 @@ const getDb = () => {
         }
     }
 
-    // 🛡️ ULTIMATE FAILSAFE COHORT DATA
     console.warn("⚠️ database.json untraceable or unreadable. Deploying live fallback cohort registry.");
     memoryDb = {
         students: [
@@ -40,18 +39,17 @@ const getDb = () => {
                 name: "Thando Langa",
                 password: "password123",
                 missedExams: [
-                    { id: "EUC101", name: "End User Computing", fee: 150 },
                     { id: "DC102", name: "Digital Citizenship", fee: 150 }
                 ],
                 bookings: [
                     {
-                        id: "B-SDG1001-1719820000000",
-                        examId: "DC102",
-                        examName: "Digital Citizenship",
+                        id: "B-SDG1001-1719999999999",
+                        examId: "EUC101",
+                        examName: "End User Computing",
                         date: "2026-07-14",
                         time: "10:00 - 12:30",
                         status: "Conditional (Pending EFT)",
-                        expiresAt: "2026-07-21",
+                        expiresAt: "2026-07-15",
                         fee: 150
                     }
                 ]
@@ -72,14 +70,14 @@ const getDb = () => {
                 missedExams: [],
                 bookings: [
                     {
-                        id: "B-SDG1003-1719830000000",
-                        examId: "EUC101",
-                        examName: "End User Computing",
-                        date: "2026-07-20",
+                        id: "B-SDG1003-1719888888888",
+                        examId: "SDG11",
+                        examName: "SDG 11 Sustainable Cities",
+                        date: "2026-07-21",
                         time: "13:00 - 15:30",
-                        status: "Approved (Paid)",
-                        expiresAt: "2026-07-27",
-                        fee: 150
+                        status: "Approved",
+                        expiresAt: "2026-07-28",
+                        fee: 200
                     }
                 ]
             }
@@ -89,14 +87,17 @@ const getDb = () => {
 };
 
 const saveDb = (data) => {
-    memoryDb = data; 
-    const pathsToTry = [ path.join(process.cwd(), 'database.json'), path.join(__dirname, 'database.json') ];
+    memoryDb = data;
+    const pathsToTry = [
+        path.join(process.cwd(), 'database.json'),
+        path.join(__dirname, 'database.json')
+    ];
     for (const targetPath of pathsToTry) {
         try {
             fs.writeFileSync(targetPath, JSON.stringify(data, null, 2));
             return;
         } catch (error) {
-            // Memory takes priority
+            // Memory takes over if workspace filesystem locks
         }
     }
 };
@@ -104,15 +105,10 @@ const saveDb = (data) => {
 app.use(cors());
 app.use(express.json());
 
-// 🔎 DIAGNOSTIC TRAFFIC LOGGER
-app.use((req, res, next) => {
-    console.log(`📡 Traffic Check: ${req.method} ${req.url}`);
-    next();
-});
+// ==========================================
+// STUDENT PROFILE APIS
+// ==========================================
 
-// ==========================================
-// CORE AUTHENTICATION ROUTERS
-// ==========================================
 app.post('/api/auth/verify', (req, res) => {
     const { studentNo } = req.body;
     const db = getDb();
@@ -133,13 +129,9 @@ app.post('/api/auth/login', (req, res) => {
     if (!student) return res.status(404).json({ message: 'Student profile missing.' });
     if (student.password !== password) return res.status(401).json({ message: 'Incorrect password.' });
 
-    const mockToken = `mock-session-token-${student.studentNo}-${Date.now()}`;
-    res.json({ ...student, token: mockToken, success: true });
+    res.json({ student, success: true, role: 'student' });
 });
 
-// ==========================================
-// RESERVATION MANAGEMENT ROUTERS
-// ==========================================
 app.post('/api/bookings/reserve', (req, res) => {
     const { studentNo, examId, date, time } = req.body;
     const db = getDb();
@@ -148,29 +140,39 @@ app.post('/api/bookings/reserve', (req, res) => {
 
     if (!student) return res.status(404).json({ message: 'Student profile missing.' });
 
-    // Handle duplicate checks for reschedule overrides vs new bookings
-    student.bookings = student.bookings.filter(b => b.examId !== examId);
+    // Handle incoming parameters from both booking creation or reschedule overrides
+    let exam = student.missedExams.find(e => e.id === examId);
+    let existingBookingIdx = student.bookings.findIndex(b => b.examId === examId);
 
-    const exam = student.missedExams.find(e => e.id === examId) || { id: examId, name: examId, fee: 150 };
+    if (existingBookingIdx !== -1) {
+        // Edit/Reschedule Loop
+        student.bookings[existingBookingIdx].date = date;
+        student.bookings[existingBookingIdx].time = time;
+        saveDb(db);
+        return res.json({ message: 'Seat reallocated successfully!', updatedStudent: student });
+    }
+
+    if (!exam) return res.status(400).json({ message: 'Module allocation error.' });
+
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
 
     const newBooking = {
         id: `B-${studentNo}-${Date.now()}`,
         examId: exam.id,
-        examName: exam.name || examId,
+        examName: exam.name,
         date,
         time,
         status: 'Conditional (Pending EFT)',
         expiresAt: expiryDate.toISOString().split('T')[0],
-        fee: exam.fee || 150
+        fee: exam.fee
     };
 
     student.bookings.push(newBooking);
     student.missedExams = student.missedExams.filter(e => e.id !== examId);
     saveDb(db);
     
-    res.json({ message: 'Seat reserved successfully!', updatedStudent: student });
+    res.json({ message: 'Conditional booking reserved successfully!', updatedStudent: student });
 });
 
 app.get('/api/bookings/slots', (req, res) => {
@@ -183,36 +185,34 @@ app.get('/api/bookings/slots', (req, res) => {
 });
 
 // ==========================================
-// 👑 ADMINISTRATIVE ACCESS ROUTERS
+// 🛡️ NEW ADMINISTRATIVE OVERRIDE MODULES
 // ==========================================
 
-// Get complete global ledger for all students and bookings
+// Fetch all dataset nodes for registry monitoring dashboard
 app.get('/api/admin/students', (req, res) => {
-    res.json(getDb().students);
+    const db = getDb();
+    res.json(db.students);
 });
 
-// Update booking status or date/time parameters administratively
+// Force change state values on target records across students array
 app.post('/api/admin/bookings/update', (req, res) => {
     const { studentNo, bookingId, status, date, time } = req.body;
     const db = getDb();
     const student = db.students.find(s => s.studentNo.toUpperCase() === studentNo.toUpperCase());
 
-    if (!student) return res.status(404).json({ message: 'Student parameter not found.' });
+    if (!student) return res.status(404).json({ message: 'Student parameter invalid.' });
     
     const booking = student.bookings.find(b => b.id === bookingId);
-    if (!booking) return res.status(404).json({ message: 'Target entry ticket voucher missing.' });
+    if (!booking) return res.status(404).json({ message: 'Target entry slip not found.' });
 
+    // Apply corporate overrides
     if (status) booking.status = status;
     if (date) booking.date = date;
     if (time) booking.time = time;
 
     saveDb(db);
-    res.json({ message: 'Administrative parameters modified successfully!', students: db.students });
-});
-
-app.use((req, res) => {
-    res.status(404).json({ message: `Route undefined: ${req.method} ${req.url}` });
+    res.json({ message: 'Administrative record updated successfully!', students: db.students });
 });
 
 const PORT = 5000;
-app.listen(PORT, () => console.log(`🌐 Production Engine live on Port: ${PORT}`));
+app.listen(PORT, () => console.log(`🌐 Administrative Engine running on Port: ${PORT}`));
