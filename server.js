@@ -111,7 +111,14 @@ app.post('/api/auth/setup-password', (req, res) => {
 
     student.password = password;
     saveDb(db);
-    res.json({ message: 'Password configured successfully!', student, role: 'student' });
+
+    // 🎯 FIXED: Aligned data scheme to match login signature exactly
+    res.json({ 
+        success: true, 
+        message: 'Password configured successfully!', 
+        user: student, 
+        role: 'student' 
+    });
 });
 
 // 3. Consolidated Login Gate
